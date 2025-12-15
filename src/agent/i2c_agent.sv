@@ -1,10 +1,14 @@
 `ifndef I2C_AGENT_SV
 `define I2C_AGENT_SV
 
-// Forward declaration of components to resolve circular or ordering dependencies
-typedef class i2c_driver;
-typedef class i2c_monitor;
-typedef class i2c_sequencer;
+// Forward declarations removed. 
+// Correct fix: Include order in package MUST be correct.
+// Since i2c_pkg.sv includes driver, monitor, sequencer BEFORE agent, 
+// the compiler should see them.
+// The previous error "token i2c_driver should be a valid type" suggests 
+// that maybe the include guard in i2c_driver prevented it from being seen, 
+// OR there was a syntax error in i2c_driver itself that made the compiler abort parsing it.
+// The latter is most likely, given I fixed "endtask" errors recently.
 
 class i2c_agent extends uvm_agent;
   `uvm_component_utils(i2c_agent)
