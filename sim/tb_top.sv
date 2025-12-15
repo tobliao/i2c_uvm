@@ -86,7 +86,12 @@ module tb_top;
     // 1000 pkts * 200us = 200ms.
     // So we wait 300ms before triggering RTL Master.
     
-    #300000000; // 300ms
+    // ADJUSTMENT: The timeout error suggests 300ms might be barely missing the mark or something else.
+    // Let's reduce this wait to ensure we definitely trigger while the test is waiting.
+    // The test switches to Slave Mode immediately after Phase 1.
+    // If Phase 1 takes 108ms (from previous log), triggering at 120ms is safer than 300ms.
+    
+    #120000000; // 120ms (was 300ms)
     
     // Trigger RTL Master multiple times to generate traffic for Slave Mode
     repeat(100) begin
