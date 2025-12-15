@@ -58,11 +58,19 @@ class i2c_sanity_test extends i2c_test_base;
     fork
         begin
             // Wait for activity
-            wait (env.agent.vif.scl === 0); 
-            `uvm_info("TEST", ">>> Activity Detected (Packet 1)", UVM_LOW)
+            // Since RTL Master runs 100 times, we should see activity.
+            // Let's just wait for a significant amount of time to allow multiple packets to pass.
+            // Or better, we can loop waiting for 'scl' toggles to prove activity.
+            
+            repeat(100) begin
+                wait (env.agent.vif.scl === 0);
+                wait (env.agent.vif.scl === 1);
+            end
+             
+            `uvm_info("TEST", ">>> Activity Detected (Saw 100 SCL Toggles)", UVM_LOW)
             
             // Just wait for simulation time to pass to cover the burst from RTL
-            #10ms; // Cover 100 packets
+            #10ms; // Cover remainder
         end
         begin
             #400ms; // Timeout (300ms start delay + buffer)
