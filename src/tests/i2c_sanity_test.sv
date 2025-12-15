@@ -32,38 +32,30 @@ class i2c_sanity_test extends i2c_test_base;
     cfg.is_master = 0;
     
     // 2. Unblock the Driver
-    // The driver is currently blocked at 'get_next_item' inside the Master loop.
-    // We send one "Dummy" transaction to wake it up. 
-    // The driver will process this (driving the bus), then loop back.
-    // On the next loop, it sees is_master=0 and enters Slave Mode.
-    // We make this dummy transaction a minimal 'Read' or 'Write' that won't confuse the bus too much.
-    // Or we rely on the fact that we can just send an empty transaction.
+    // Use the sequencer's execute_item() convenience method if available, 
+    // BUT since we are in a test (which is a component), we CANNOT call start_item/finish_item 
+    // because those are methods of uvm_sequence_base, not uvm_component/uvm_sequencer.
+    //
+    // The correct way to send a single item from a test without a sequence object is:
+    // Create a generic sequence and start it, OR reuse the existing sequence object.
     
-    env.agent.sequencer.lock(seq); // Just to get exclusive access if needed, though we are direct
-    dummy_tr = i2c_transaction::type_id::create("dummy_tr");
-    env.agent.sequencer.start_item(dummy_tr);
-    dummy_tr.randomize() with { 
-        addr == 0; // General call or dummy
-        direction == I2C_READ; // Read is safer, high-Z
+    seq.req = i2c_transaction::type_id::create("dummy_tr");
+    seq.start_item(seq.req); // reusing the 'seq' object which is already a sequence
+    if (!seq.req.randomize() with {
+        addr == 0; 
+        direction == I2C_READ;
         data.size() == 1;
-    }; 
-    env.agent.sequencer.finish_item(dummy_tr);
-    env.agent.sequencer.unlock(seq);
+    }) `uvm_error("TEST", "Randomization failed")
+    seq.finish_item(seq.req);
 
     `uvm_info("TEST", ">>> VIP is now in Slave Mode (Waiting for RTL Master)", UVM_LOW)
 
     // ---------------------------------------------------------
     // PHASE 3: Slave Mode (VIP acts as Slave)
     // ---------------------------------------------------------
-    // The RTL Master in tb_top.sv is configured to trigger at 2ms (#2000000).
-    // We just wait here until that happens.
-    // A real reactive slave sequence would run on the sequencer, 
-    // but our driver bit-banging slave logic is currently simple blocking code.
     
-    wait (env.agent.vif.scl === 0); // Wait for some activity (Start condition involves SCL)
-    // Actually Start is SDA Fall while SCL High.
+    wait (env.agent.vif.scl === 0); // Wait for some activity
     
-    // Wait for the RTL Master transaction to complete
     #100us; 
     
     `uvm_info("TEST", ">>> Sanity Test Complete", UVM_LOW)
