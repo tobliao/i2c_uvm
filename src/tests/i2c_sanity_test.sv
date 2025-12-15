@@ -54,8 +54,26 @@ class i2c_sanity_test extends i2c_test_base;
     // PHASE 3: Slave Mode (VIP acts as Slave)
     // ---------------------------------------------------------
     
-    wait (env.agent.vif.scl === 0); // Wait for some activity
+    // The RTL Master in tb_top.sv is configured to trigger at 2ms (#2000000).
+    // The test starts at 0. Phase 1 takes ~100-200us. Phase 2 happens immediately after.
+    // So we are sitting here at ~200us, waiting for 2000us.
+    // The wait(scl === 0) will block until then.
     
+    // Add a timeout just in case
+    fork
+        begin
+            wait (env.agent.vif.scl === 0); // Wait for some activity
+        end
+        begin
+            #3ms; // Timeout if RTL Master never triggers
+            `uvm_fatal("TEST", "Timeout waiting for RTL Master activity")
+        end
+    join_any
+    disable fork;
+    
+    `uvm_info("TEST", ">>> Activity Detected on Bus (RTL Master Driving)", UVM_LOW)
+    
+    // Wait for the RTL Master transaction to complete
     #100us; 
     
     `uvm_info("TEST", ">>> Sanity Test Complete", UVM_LOW)
