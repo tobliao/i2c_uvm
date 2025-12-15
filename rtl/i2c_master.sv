@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 module i2c_master #(
   parameter int CLK_DIV = 50 // SCL = clk / (4*CLK_DIV) approx
 )(
@@ -199,4 +201,3 @@ module i2c_master #(
   endtask
 
 endmodule
-

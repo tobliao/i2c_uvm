@@ -1,5 +1,4 @@
-`ifndef I2C_IF_SV
-`define I2C_IF_SV
+`timescale 1ns/1ps
 
 interface i2c_if;
 
@@ -27,5 +26,3 @@ interface i2c_if;
   end
 
 endinterface
-
-`endif // I2C_IF_SV

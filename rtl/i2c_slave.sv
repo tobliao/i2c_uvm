@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 module i2c_slave #(
   parameter logic [6:0] SLAVE_ADDR = 7'h55
 )(
@@ -199,4 +201,3 @@ module i2c_slave #(
   end
 
 endmodule
-
