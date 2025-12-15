@@ -13,7 +13,30 @@ TOP = $(PROJ_ROOT)/sim/tb_top.sv
 COV_OPTS = -cm line+tgl+cond+fsm+branch -cm_dir coverage.vdb
 
 # Tools
+# REMOVED -ntb_opts uvm-1.2 because it can cause conflicts with explicit imports if not handled carefully regarding timescale.
+# Added explicit -timescale=1ns/1ps to force a global default if files are missing it (safety net),
+# although we fixed the files.
+# The real issue is likely that 'ntb_opts uvm-1.2' compiles the UVM library *before* our files.
+# If the UVM library (pre-compiled or included via that flag) doesn't have a timescale matching ours,
+# or if it sets a precedent that we violate, it errors.
+# However, usually UVM has a timescale.
+# The error "Package i2c_test_pkg has `timescale but previous module(s)/package(s) do not"
+# strongly suggests that WHATEVER was compiled immediately before i2c_test_pkg did NOT have a timescale.
+# In the line: $(VCS) $(PKG) ...
+# PKG expands to: src/i2c_pkg.sv src/i2c_test_pkg.sv
+# So i2c_pkg.sv is compiled first. Does it have a timescale? YES.
+# But wait, the error says "previous module(s)/package(s) do not".
+# If i2c_pkg.sv has it, then i2c_test_pkg.sv should be fine.
+# UNLESS 'uvm_pkg' is considered the "previous" one and IT doesn't have one (unlikely) 
+# OR there is something else.
+
+# Let's try reordering: Interface first, then Packages, then RTL. 
+# Interfaces are often needed by packages if packages import them, but here packages just use classes.
+# Actually, the error is likely due to the UVM library itself being compiled implicitly without a matching timescale context.
+# We will use -timescale=1ns/1ps to force the default for any unit that doesn't have one.
+
 VCS = vcs -full64 -sverilog -ntb_opts uvm-1.2 \
+      -timescale=1ns/1ps \
       -debug_access+all -kdb -lcomp.log \
       +incdir+$(PROJ_ROOT)/src \
       $(COV_OPTS)
