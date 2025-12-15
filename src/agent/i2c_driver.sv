@@ -181,7 +181,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
        
        vif.scl_drive <= 1'b0;
     end
-  end
+  endtask
   
   task read_byte(output bit [7:0] data);
     vif.sda_drive <= 1'b1; 
@@ -196,7 +196,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
        
        vif.scl_drive <= 1'b0;
     end
-  end
+  endtask
   
   task wait_ack(output i2c_status_e status);
     vif.sda_drive <= 1'b1;
@@ -214,7 +214,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     end
     
     vif.scl_drive <= 1'b0;
-  end
+  endtask
 
   task send_ack();
     vif.sda_drive <= 1'b0;
@@ -222,7 +222,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     vif.scl_drive <= 1'b1;
     wait_half_period(1);
     vif.scl_drive <= 1'b0;
-  end
+  endtask
 
   task send_nack();
     vif.sda_drive <= 1'b1;
@@ -230,7 +230,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     vif.scl_drive <= 1'b1;
     wait_half_period(1);
     vif.scl_drive <= 1'b0;
-  end
+  endtask
 
 endclass
 
