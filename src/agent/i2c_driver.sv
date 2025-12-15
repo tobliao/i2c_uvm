@@ -184,7 +184,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
        
        vif.scl_drive <= 1'b0;
     end
-  end
+  endtask
   
   task read_byte(output bit [7:0] data);
     vif.sda_drive <= 1'b1; 
@@ -217,7 +217,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     end
     
     vif.scl_drive <= 1'b0;
-  end
+  endtask
 
   task send_ack();
     vif.sda_drive <= 1'b0;
@@ -225,7 +225,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     vif.scl_drive <= 1'b1;
     wait_half_period(1);
     vif.scl_drive <= 1'b0;
-  end
+  endtask
 
   task send_nack();
     vif.sda_drive <= 1'b1;
@@ -233,7 +233,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     vif.scl_drive <= 1'b1;
     wait_half_period(1);
     vif.scl_drive <= 1'b0;
-  end
+  endtask
 
   // -----------------------------------------------------------------------
   // BIT BANGING HELPERS (SLAVE - Passive SCL Observe)
@@ -250,7 +250,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
        // Wait for SCL Falling Edge (Next bit setup)
        wait(vif.scl == 0);
     end
-  end
+  endtask
 
   task slave_send_byte(input bit [7:0] data);
     vif.scl_drive <= 1'b1; // Ensure we don't drive SCL
@@ -266,7 +266,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     end
     // Release SDA after last bit
     vif.sda_drive <= 1'b1;
-  end
+  endtask
 
   task slave_send_ack();
     vif.scl_drive <= 1'b1; 
@@ -280,7 +280,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     
     // Release SDA
     vif.sda_drive <= 1'b1;
-  end
+  endtask
 
   task slave_wait_ack_or_nack();
     vif.scl_drive <= 1'b1;
@@ -289,7 +289,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     wait(vif.scl == 1);
     // Sample if needed: ack = vif.sda;
     wait(vif.scl == 0);
-  end
+  endtask
 
 endclass
 
