@@ -96,7 +96,7 @@ module tb_top;
     // Trigger RTL Master multiple times to generate traffic for Slave Mode
     repeat(100) begin
       mst_req = 1;
-      #200; // Trigger pulse
+      #5000; // Trigger pulse extended to 5us (must be > 4*CLK_DIV*clk_period approx 1us)
       mst_req = 0;
       
       // Wait for transaction to complete
