@@ -15,6 +15,10 @@ package i2c_test_pkg;
   `include "tests/i2c_slave_test.sv"
   `include "tests/i2c_burst_test.sv"
   `include "tests/i2c_nack_test.sv"
+  `include "tests/i2c_10bit_test.sv"
+  `include "tests/i2c_restart_test.sv"
+  `include "tests/i2c_gen_call_test.sv"
+  `include "tests/i2c_speed_test.sv"
 
 endpackage
 
