@@ -34,7 +34,9 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     end
   endtask
 
-  // --- Master Mode Tasks ---
+  // -----------------------------------------------------------------------
+  // MASTER MODE TASKS
+  // -----------------------------------------------------------------------
   task drive_transfer(i2c_transaction tr);
     // Enhanced Logging: Print full transaction details
     `uvm_info("DRV", $sformatf("Master Driving: %s", tr.convert2string()), UVM_LOW)
@@ -75,7 +77,9 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
       send_stop();
   endtask
 
-  // --- Slave Mode Tasks ---
+  // -----------------------------------------------------------------------
+  // SLAVE MODE TASKS
+  // -----------------------------------------------------------------------
   task wait_for_request();
       logic [7:0] addr_byte;
       logic [7:0] data_byte;
@@ -83,50 +87,45 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
       bit [6:0] rcv_addr;
       
       // 1. Detect Start Condition
-      // We must detect Start OR if the test wants to end.
-      // Since we don't have an easy way to interrupt 'wait', 
-      // we rely on the bus activity or reset.
-      
+      // Start = SDA falling while SCL is high
       wait(vif.sda == 0 && vif.scl == 1);
       
-      // 2. Read Address (8 bits)
-      // Since we don't have a full bit-banging slave RX implementation in this VIP version yet,
-      // we will perform a 'snoop' or cheat by reading the byte using the same timing helper
-      // assuming the RTL master follows standard timing.
-      
-      // Wait for first SCL rise to sample address
-      read_byte(addr_byte);
+      // 2. Read Address (8 bits) - PASSIVE mode (Slave)
+      slave_read_byte(addr_byte);
       
       rcv_addr = addr_byte[7:1];
       dir      = i2c_direction_e'(addr_byte[0]);
       
-      // 3. Send ACK (We acknowledge everything for now)
-      send_ack();
+      // 3. Send ACK
+      slave_send_ack();
       
-      // 4. Read Data (Assume 1 byte Write for simple sanity test)
-      // In a real robust driver, we would loop until Stop.
+      // 4. Data Phase
       if (dir == I2C_WRITE) begin
-          read_byte(data_byte);
-          send_ack();
+          // Master Write -> Slave Read
+          slave_read_byte(data_byte);
+          slave_send_ack();
           
-          `uvm_info("DRV_SLV", $sformatf("Slave Received Write: Addr=0x%0h Data=0x%0h", rcv_addr, data_byte), UVM_LOW)
+          `uvm_info("DRV_SLV", $sformatf("Slave Received Write: Addr=0x%0x Data=0x%0x", rcv_addr, data_byte), UVM_LOW)
       end else begin
-          // For Read, we should drive data.
+          // Master Read -> Slave Write
           // Placeholder: Drive 0xFF
-          send_byte(8'hFF);
-          // Master sends NACK/ACK
-          // wait_ack(status); // Ignore status for now
+          slave_send_byte(8'hFF);
+          // Master sends NACK/ACK. We just passively wait for the clock.
+          // For now, assume master ACKs or NACKs, we just release bus.
+          slave_wait_ack_or_nack();
           
-          `uvm_info("DRV_SLV", $sformatf("Slave Serviced Read: Addr=0x%0h Driven=0xFF", rcv_addr), UVM_LOW)
+          `uvm_info("DRV_SLV", $sformatf("Slave Serviced Read: Addr=0x%0x Driven=0xFF", rcv_addr), UVM_LOW)
       end
       
-      // 5. Wait for Stop
+      // 5. Wait for Stop (SDA rising while SCL high)
       wait(vif.sda == 1 && vif.scl == 1);
       
   endtask
 
 
-  // --- Bit Banging Tasks ---
+  // -----------------------------------------------------------------------
+  // BIT BANGING HELPERS (MASTER - Active SCL Drive)
+  // -----------------------------------------------------------------------
   
   task wait_half_period(int is_high_period);
      if (is_high_period)
@@ -185,7 +184,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
        
        vif.scl_drive <= 1'b0;
     end
-  endtask
+  end
   
   task read_byte(output bit [7:0] data);
     vif.sda_drive <= 1'b1; 
@@ -200,7 +199,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
        
        vif.scl_drive <= 1'b0;
     end
-  endtask
+  end
   
   task wait_ack(output i2c_status_e status);
     vif.sda_drive <= 1'b1;
@@ -218,7 +217,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     end
     
     vif.scl_drive <= 1'b0;
-  endtask
+  end
 
   task send_ack();
     vif.sda_drive <= 1'b0;
@@ -226,7 +225,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     vif.scl_drive <= 1'b1;
     wait_half_period(1);
     vif.scl_drive <= 1'b0;
-  endtask
+  end
 
   task send_nack();
     vif.sda_drive <= 1'b1;
@@ -234,7 +233,63 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     vif.scl_drive <= 1'b1;
     wait_half_period(1);
     vif.scl_drive <= 1'b0;
-  endtask
+  end
+
+  // -----------------------------------------------------------------------
+  // BIT BANGING HELPERS (SLAVE - Passive SCL Observe)
+  // -----------------------------------------------------------------------
+
+  task slave_read_byte(output bit [7:0] data);
+    vif.sda_drive <= 1'b1; // Release SDA to read
+    vif.scl_drive <= 1'b1; // Ensure we don't drive SCL
+    
+    for(int i=7; i>=0; i--) begin
+       // Wait for SCL Rising Edge (Sample point)
+       wait(vif.scl == 1); 
+       data[i] = vif.sda;
+       // Wait for SCL Falling Edge (Next bit setup)
+       wait(vif.scl == 0);
+    end
+  end
+
+  task slave_send_byte(input bit [7:0] data);
+    vif.scl_drive <= 1'b1; // Ensure we don't drive SCL
+    
+    for(int i=7; i>=0; i--) begin
+       // Data setup (after SCL fell)
+       vif.sda_drive <= data[i];
+       
+       // Wait for SCL Rising Edge (Master samples)
+       wait(vif.scl == 1);
+       // Wait for SCL Falling Edge
+       wait(vif.scl == 0);
+    end
+    // Release SDA after last bit
+    vif.sda_drive <= 1'b1;
+  end
+
+  task slave_send_ack();
+    vif.scl_drive <= 1'b1; 
+    
+    // Drive ACK (Low)
+    vif.sda_drive <= 1'b0;
+    
+    // Wait for Master to clock the ACK
+    wait(vif.scl == 1);
+    wait(vif.scl == 0);
+    
+    // Release SDA
+    vif.sda_drive <= 1'b1;
+  end
+
+  task slave_wait_ack_or_nack();
+    vif.scl_drive <= 1'b1;
+    vif.sda_drive <= 1'b1; // Release SDA
+    
+    wait(vif.scl == 1);
+    // Sample if needed: ack = vif.sda;
+    wait(vif.scl == 0);
+  end
 
 endclass
 
