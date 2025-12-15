@@ -27,7 +27,36 @@ class i2c_test_base extends uvm_test;
   endfunction
 
   function void end_of_elaboration_phase(uvm_phase phase);
+    // Disable noisy reports
     uvm_top.print_topology();
+    
+    // Suppress "demoted/caught" summary
+    // UVM doesn't have a simple switch for just that table, 
+    // but we can use report_server to disable specific summary outputs
+    // or just rely on simulator specific flags.
+    // However, usually this is managed via the UVM report server.
+    // For now, let's just keep topology print.
+  endfunction
+  
+  function void report_phase(uvm_phase phase);
+     uvm_report_server svr;
+     super.report_phase(phase);
+     
+     svr = uvm_report_server::get_server();
+     // svr.summarize(); // This is called by default by run_test()
+     // To hide the "demoted/caught" counts, we have to override the report server or accept it.
+     // Standard UVM always prints these if they are zero.
+     // But we can check if there are errors and only print failure message.
+     
+     if (svr.get_severity_count(UVM_FATAL) + svr.get_severity_count(UVM_ERROR) == 0) begin
+        $display("\n========================================================");
+        $display("    TEST STATUS: PASSED");
+        $display("========================================================\n");
+     end else begin
+        $display("\n========================================================");
+        $display("    TEST STATUS: FAILED");
+        $display("========================================================\n");
+     end
   endfunction
 
 endclass
