@@ -1,6 +1,11 @@
 `ifndef I2C_AGENT_SV
 `define I2C_AGENT_SV
 
+// Forward declaration of components to resolve circular or ordering dependencies
+typedef class i2c_driver;
+typedef class i2c_monitor;
+typedef class i2c_sequencer;
+
 class i2c_agent extends uvm_agent;
   `uvm_component_utils(i2c_agent)
 
@@ -55,4 +60,3 @@ class i2c_agent extends uvm_agent;
 endclass
 
 `endif // I2C_AGENT_SV
-
