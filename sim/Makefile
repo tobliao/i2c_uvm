@@ -26,10 +26,10 @@ all: clean comp run
 comp:
 	$(VCS) $(PKG) $(INTF) $(RTL) $(TOP)
 
-run:
+run: comp
 	$(SIM) +UVM_TESTNAME=i2c_sanity_test -l run.log
 
-run_slave:
+run_slave: comp
 	$(SIM) +UVM_TESTNAME=i2c_slave_test -l run_slave.log
 
 clean:
