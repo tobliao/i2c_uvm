@@ -199,7 +199,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
        
        vif.scl_drive <= 1'b0;
     end
-  end
+  endtask
   
   task wait_ack(output i2c_status_e status);
     vif.sda_drive <= 1'b1;
