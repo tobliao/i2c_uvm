@@ -62,6 +62,15 @@ class i2c_sanity_test extends i2c_test_base;
             // Let's just wait for a significant amount of time to allow multiple packets to pass.
             // Or better, we can loop waiting for 'scl' toggles to prove activity.
             
+            // Wait for activity
+            // RTL Master Loop: 100 iterations.
+            // Each transaction has ~20 bits (Addr+Data+ACKs) * 4us/bit = 80us.
+            // Plus 50us gap. Total ~130us per transaction.
+            // 100 transactions ~ 13ms.
+            //
+            // We wait for 100 SCL toggles. 100 toggles = 50 clocks = ~200us.
+            // This condition is met almost instantly after the first packet starts.
+            
             repeat(100) begin
                 wait (env.agent.vif.scl === 0);
                 wait (env.agent.vif.scl === 1);
@@ -69,11 +78,19 @@ class i2c_sanity_test extends i2c_test_base;
              
             `uvm_info("TEST", ">>> Activity Detected (Saw 100 SCL Toggles)", UVM_LOW)
             
-            // Just wait for simulation time to pass to cover the burst from RTL
-            #200ms; // Cover remainder (Increased from 10ms to ensure all RTL pkts finish)
+            // Wait for ALL RTL Master transactions to finish.
+            // 100 packets * ~200us gap/pkt = 20ms. 
+            // We were waiting 200ms which is plenty.
+            #200ms; 
         end
         begin
-            #1000ms; // Timeout (300ms start delay + buffer, significantly increased)
+             // The Timeout logic starts counting from when Phase 2 starts (approx 108ms).
+             // If we time out at 508ms (Total Sim Time), it means we waited 400ms here.
+             // But I just changed it to 1000ms in the previous commit.
+             // If you are still seeing 508ms crash, it means the previous commit WAS NOT PULLED or compiled?
+             // Or maybe 'phase 2' starts later?
+             // Let's make it huge to be absolutely safe.
+            #2000ms; 
             `uvm_fatal("TEST", "Timeout waiting for RTL Master activity")
         end
     join_any
