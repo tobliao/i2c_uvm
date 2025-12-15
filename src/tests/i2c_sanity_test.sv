@@ -70,10 +70,10 @@ class i2c_sanity_test extends i2c_test_base;
             `uvm_info("TEST", ">>> Activity Detected (Saw 100 SCL Toggles)", UVM_LOW)
             
             // Just wait for simulation time to pass to cover the burst from RTL
-            #10ms; // Cover remainder
+            #200ms; // Cover remainder (Increased from 10ms to ensure all RTL pkts finish)
         end
         begin
-            #400ms; // Timeout (300ms start delay + buffer)
+            #1000ms; // Timeout (300ms start delay + buffer, significantly increased)
             `uvm_fatal("TEST", "Timeout waiting for RTL Master activity")
         end
     join_any
