@@ -5,6 +5,9 @@ class i2c_coverage extends uvm_subscriber #(i2c_transaction);
   `uvm_component_utils(i2c_coverage)
 
   i2c_config cfg;
+  
+  // Member to hold current transaction for covergroup visibility
+  protected i2c_transaction req;
 
   // ---------------------------------------------------------------------------
   // Covergroup: Protocol Transactions
@@ -13,11 +16,9 @@ class i2c_coverage extends uvm_subscriber #(i2c_transaction);
     option.per_instance = 1;
 
     // Address Coverage
-    cp_addr_mode: coverpoint i2c_addr_mode_e'(0) { // Placeholder, need transaction field
-      // We need to capture the mode from the transaction or config
-      // Ideally, the transaction should carry the mode used.
-      // Assuming tr.addr_mode exists based on previous file reads.
-      option.weight = 0; // Derived from addr
+    cp_addr_mode: coverpoint req.addr_mode { 
+      bins addr_7bit  = {I2C_ADDR_7BIT};
+      bins addr_10bit = {I2C_ADDR_10BIT};
     }
     
     cp_addr_7bit: coverpoint req.addr {
@@ -102,10 +103,6 @@ class i2c_coverage extends uvm_subscriber #(i2c_transaction);
     i2c_config_cg.sample();
   endfunction
 
-  // Member to hold current transaction for covergroup visibility
-  protected i2c_transaction req;
-
 endclass
 
 `endif // I2C_COVERAGE_SV
-

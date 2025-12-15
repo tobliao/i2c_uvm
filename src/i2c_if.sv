@@ -18,11 +18,7 @@ interface i2c_if;
   assign scl = (scl_drive === 1'b0) ? 1'b0 : 1'bz;
   assign sda = (sda_drive === 1'b0) ? 1'b0 : 1'bz;
 
-  // Pull-up Resistors (Simulating the board pull-ups)
-  // Only ONE instance of pullup is needed per bus.
-  // We can make this conditional or assume this interface is the "Bus Owner"
-  pullup(scl);
-  pullup(sda);
+  // Pull-up Resistors moved to Testbench (tb_top.sv) due to tool limitations in Interface
 
   // Initialization
   initial begin

@@ -4,10 +4,6 @@ module tb_top;
   import uvm_pkg::*;
   import i2c_test_pkg::*;
 
-  // Logic wires
-  wire scl;
-  wire sda;
-  
   // Clock and Reset for RTL Master
   reg clk;
   reg rst_n;
@@ -23,6 +19,10 @@ module tb_top;
 
   // Interface Instance
   i2c_if intf();
+
+  // Pull-up Resistors (Simulating the board pull-ups)
+  pullup(intf.scl);
+  pullup(intf.sda);
 
   // DUT Instance: SLAVE (Used for Master-Mode Tests)
   i2c_slave #(
