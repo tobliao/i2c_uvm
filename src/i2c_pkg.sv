@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 `ifndef I2C_PKG_SV
 `define I2C_PKG_SV
 
@@ -29,4 +31,3 @@ package i2c_pkg;
 endpackage
 
 `endif // I2C_PKG_SV
-

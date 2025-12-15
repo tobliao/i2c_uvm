@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 `ifndef I2C_TEST_PKG_SV
 `define I2C_TEST_PKG_SV
 
