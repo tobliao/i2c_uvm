@@ -17,9 +17,13 @@ class i2c_sanity_test extends i2c_test_base;
     // ---------------------------------------------------------
     // PHASE 1: Master Mode (VIP acts as Master)
     // ---------------------------------------------------------
-    `uvm_info("TEST", ">>> PHASE 1: VIP Master -> RTL Slave", UVM_LOW)
+    `uvm_info("TEST", ">>> PHASE 1: VIP Master -> RTL Slave (Running 100 packets)", UVM_LOW)
+    
     seq = i2c_master_write_seq::type_id::create("seq");
-    seq.start(env.agent.sequencer);
+    
+    repeat(100) begin
+       seq.start(env.agent.sequencer);
+    end
     
     #10us; // Small drain time
     
@@ -32,13 +36,6 @@ class i2c_sanity_test extends i2c_test_base;
     cfg.is_master = 0;
     
     // 2. Unblock the Driver
-    // Use the sequencer's execute_item() convenience method if available, 
-    // BUT since we are in a test (which is a component), we CANNOT call start_item/finish_item 
-    // because those are methods of uvm_sequence_base, not uvm_component/uvm_sequencer.
-    //
-    // The correct way to send a single item from a test without a sequence object is:
-    // Create a generic sequence and start it, OR reuse the existing sequence object.
-    
     seq.req = i2c_transaction::type_id::create("dummy_tr");
     seq.start_item(seq.req); // reusing the 'seq' object which is already a sequence
     if (!seq.req.randomize() with {
@@ -54,27 +51,25 @@ class i2c_sanity_test extends i2c_test_base;
     // PHASE 3: Slave Mode (VIP acts as Slave)
     // ---------------------------------------------------------
     
-    // The RTL Master in tb_top.sv is configured to trigger at 2ms (#2000000).
-    // The test starts at 0. Phase 1 takes ~100-200us. Phase 2 happens immediately after.
-    // So we are sitting here at ~200us, waiting for 2000us.
-    // The wait(scl === 0) will block until then.
+    // The RTL Master in tb_top.sv will trigger multiple times.
+    // We want to observe activity.
     
     // Add a timeout just in case
     fork
         begin
-            wait (env.agent.vif.scl === 0); // Wait for some activity
+            // Wait for activity
+            wait (env.agent.vif.scl === 0); 
+            `uvm_info("TEST", ">>> Activity Detected (Packet 1)", UVM_LOW)
+            
+            // Just wait for simulation time to pass to cover the burst from RTL
+            #2ms; 
         end
         begin
-            #3ms; // Timeout if RTL Master never triggers
+            #40ms; // Timeout (30ms start delay + buffer)
             `uvm_fatal("TEST", "Timeout waiting for RTL Master activity")
         end
     join_any
     disable fork;
-    
-    `uvm_info("TEST", ">>> Activity Detected on Bus (RTL Master Driving)", UVM_LOW)
-    
-    // Wait for the RTL Master transaction to complete
-    #100us; 
     
     `uvm_info("TEST", ">>> Sanity Test Complete", UVM_LOW)
     phase.drop_objection(this);

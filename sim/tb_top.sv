@@ -82,13 +82,24 @@ module tb_top;
     #100;
     
     // Trigger Master RTL if running Slave Test
-    // Ideally this should be controlled via a virtual sequence or signal agent
-    // For now, we hardcode a trigger after some delay
-    // Delay needs to be long enough for the Master-Mode Sanity test to finish (approx 1ms)
-    #2000000; // 2ms
-    mst_req = 1;
-    #20;
-    mst_req = 0;
+    // Phase 1 (Master Mode) takes ~100-200us per packet. 
+    // We want to give it enough time but not wait forever.
+    // Let's assume Phase 1 sends 100 packets now. 
+    // 100 pkts * 200us = 20ms.
+    // So we wait 30ms before triggering RTL Master.
+    
+    #30000000; // 30ms
+    
+    // Trigger RTL Master multiple times to generate traffic for Slave Mode
+    repeat(20) begin
+      mst_req = 1;
+      #200; // Trigger pulse
+      mst_req = 0;
+      
+      // Wait for transaction to complete
+      wait(mst_done);
+      #50000; // 50us gap between transactions
+    end
   end
 
   // Connect Interface to UVM DB
