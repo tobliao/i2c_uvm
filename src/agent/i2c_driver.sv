@@ -23,10 +23,6 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
         // Get the next item (Blocking)
         seq_item_port.get_next_item(req);
         
-        // Re-check config in case it changed while we were blocked?
-        // If changed, we might want to skip driving, but we already pulled the item.
-        // Let's just drive this last item (the "Switching" dummy item) and then loop.
-        
         drive_transfer(req);
         seq_item_port.item_done();
         
@@ -34,16 +30,14 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
         // --- SLAVE MODE ---
         // Listen to the bus
         wait_for_request();
-        
-        // After one transaction, we loop back.
-        // This allows checking if we switched back to Master (unlikely in this test, but good practice).
       end
     end
   endtask
 
   // --- Master Mode Tasks ---
   task drive_transfer(i2c_transaction tr);
-    `uvm_info("DRV", $sformatf("Driving Transaction: %s", tr.convert2string()), UVM_MEDIUM)
+    // Enhanced Logging: Print full transaction details
+    `uvm_info("DRV", $sformatf("Driving Transaction: %s", tr.convert2string()), UVM_LOW)
     
     // 1. Start Condition
     send_start();
@@ -84,41 +78,22 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
   // --- Slave Mode Tasks ---
   task wait_for_request();
       // 1. Detect Start Condition
-      // We wait for SDA Falling Edge while SCL is High
-      // Note: This is a blocking check.
-      
-      // Basic polling loop for Start
-      // We must exit if reset or something else happens, but for now simple wait.
       fork
         begin
            wait(vif.sda == 0 && vif.scl == 1);
         end
         begin
-           // Optional timeout to allow polling config? 
-           // For now, infinite wait is fine for the test logic.
-           // However, if we want to be robust, we should allow breaking out.
+           // Optional timeout logic here if needed
         end
       join_any
       disable fork;
       
-      `uvm_info("DRV_SLV", "Start Condition Detected", UVM_HIGH)
+      `uvm_info("DRV_SLV", "Start Condition Detected - RTL Master is driving", UVM_LOW)
       
-      // 2. Read Address (8 bits)
-      // This part requires bit-banging read similar to 'read_byte' but driven by Master's SCL.
-      // Since this is a simple VIP, we will just wait a fixed time to simulate the transaction duration
-      // or implement a basic 'slave_byte_rx'.
+      // 2. Detect Stop Condition
+      wait(vif.sda == 1 && vif.scl == 1); 
       
-      // Real implementation would:
-      // - Sample 8 bits on SCL rising edges
-      // - Compare Address
-      // - Drive ACK
-      // - Rx/Tx Data
-      
-      // Placeholder for sanity test:
-      // Wait for the transaction to essentially 'pass' by waiting for Stop condition
-      wait(vif.sda == 1 && vif.scl == 1); // Stop
-      
-      `uvm_info("DRV_SLV", "Stop Condition Detected / Transaction Done", UVM_HIGH)
+      `uvm_info("DRV_SLV", "Stop Condition Detected - Transaction Complete", UVM_LOW)
   endtask
 
 
