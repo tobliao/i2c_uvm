@@ -44,7 +44,21 @@ class i2c_transaction extends uvm_sequence_item;
     super.new(name);
   endfunction
 
+  // Custom convert2string for readable sprint logs
+  virtual function string convert2string();
+    string s;
+    s = $sformatf("Addr=0x%0x Dir=%s DataSize=%0d", addr, direction.name(), data.size());
+    if (data.size() > 0) begin
+      s = {s, " Data={"};
+      foreach (data[i]) begin
+        s = {s, $sformatf("%02x%s", data[i], (i==data.size()-1) ? "" : " ")};
+      end
+      s = {s, "}"};
+    end
+    s = {s, $sformatf(" Status=%s", status.name())};
+    return s;
+  endfunction
+
 endclass
 
 `endif // I2C_TRANSACTION_SV
-

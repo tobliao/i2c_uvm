@@ -17,11 +17,11 @@ class i2c_sanity_test extends i2c_test_base;
     // ---------------------------------------------------------
     // PHASE 1: Master Mode (VIP acts as Master)
     // ---------------------------------------------------------
-    `uvm_info("TEST", ">>> PHASE 1: VIP Master -> RTL Slave (Running 100 packets)", UVM_LOW)
+    `uvm_info("TEST", ">>> PHASE 1: VIP Master -> RTL Slave (Running 1000 packets)", UVM_LOW)
     
     seq = i2c_master_write_seq::type_id::create("seq");
     
-    repeat(100) begin
+    repeat(1000) begin
        seq.start(env.agent.sequencer);
     end
     
@@ -62,10 +62,10 @@ class i2c_sanity_test extends i2c_test_base;
             `uvm_info("TEST", ">>> Activity Detected (Packet 1)", UVM_LOW)
             
             // Just wait for simulation time to pass to cover the burst from RTL
-            #2ms; 
+            #10ms; // Cover 100 packets
         end
         begin
-            #40ms; // Timeout (30ms start delay + buffer)
+            #400ms; // Timeout (300ms start delay + buffer)
             `uvm_fatal("TEST", "Timeout waiting for RTL Master activity")
         end
     join_any

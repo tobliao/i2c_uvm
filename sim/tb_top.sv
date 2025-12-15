@@ -83,15 +83,13 @@ module tb_top;
     
     // Trigger Master RTL if running Slave Test
     // Phase 1 (Master Mode) takes ~100-200us per packet. 
-    // We want to give it enough time but not wait forever.
-    // Let's assume Phase 1 sends 100 packets now. 
-    // 100 pkts * 200us = 20ms.
-    // So we wait 30ms before triggering RTL Master.
+    // 1000 pkts * 200us = 200ms.
+    // So we wait 300ms before triggering RTL Master.
     
-    #30000000; // 30ms
+    #300000000; // 300ms
     
     // Trigger RTL Master multiple times to generate traffic for Slave Mode
-    repeat(20) begin
+    repeat(100) begin
       mst_req = 1;
       #200; // Trigger pulse
       mst_req = 0;
