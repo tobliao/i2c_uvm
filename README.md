@@ -70,3 +70,22 @@ i2c_uvm/
 *   **Multi-Master Arbitration:** Logic for arbitration loss and back-off.
 *   **10-bit Addressing:** Full support for extended addressing.
 *   **High-Speed Mode:** Support for 3.4 MHz signaling.
+
+## Submission Guidelines
+
+When submitting this project, please ensure only the necessary source files and documentation are included. All generated files, logs, and simulation artifacts should be excluded.
+
+**Required Files:**
+*   `rtl/`: All RTL source files.
+*   `src/`: All UVM source code (agent, env, sequences, tests).
+*   `sim/`: `Makefile` only (no logs or binaries).
+*   `docs/`: Testplan and documentation.
+*   `README.md`: This file.
+
+**Excluded Files (automatically handled by .gitignore):**
+*   Compilation directories (`csrc`, `simv.daidir`)
+*   Simulation executables (`simv`)
+*   Log files (`*.log`)
+*   Waveform dumps (`*.fsdb`)
+*   Coverage databases (`coverage.vdb`)
+*   Verdi configuration files

@@ -1,0 +1,28 @@
+# VCS Generated Files
+sim/csrc/
+sim/simv
+sim/simv.daidir/
+sim/*.daidir/
+sim/DVEfiles/
+sim/vc_hdrs.h
+sim/ucli.key
+sim/.vlogansetup.args
+sim/.vcs_lib_lock
+sim/verdi_config_file
+sim/.fsm.sch.verilog.xml
+
+# Logs and Reports
+sim/*.log
+sim/cov_report/
+sim/coverage.vdb/
+
+# Waveforms
+sim/*.fsdb
+sim/*.vcd
+sim/*.vpd
+
+# Temporary System Files
+*.swp
+*.swo
+*~
+.DS_Store
