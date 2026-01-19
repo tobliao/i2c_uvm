@@ -12,6 +12,8 @@ class i2c_test_base extends uvm_test;
   endfunction
 
   function void build_phase(uvm_phase phase);
+    bit [6:0] slave_addr;
+    
     super.build_phase(phase);
     env = i2c_env::type_id::create("env", this);
     
@@ -22,20 +24,20 @@ class i2c_test_base extends uvm_test;
     cfg.speed = I2C_STANDARD_MODE;
     cfg.set_default_timings();
     
+    // Get slave address from testbench (single source of truth)
+    if (uvm_config_db#(bit[6:0])::get(null, "*", "slave_addr", slave_addr)) begin
+      cfg.slave_addr = slave_addr;
+      `uvm_info("TEST_BASE", $sformatf("Got slave_addr from config_db: 0x%0h", slave_addr), UVM_LOW)
+    end else begin
+      `uvm_info("TEST_BASE", $sformatf("Using default slave_addr: 0x%0h", cfg.slave_addr), UVM_LOW)
+    end
+    
     // Set config for the agent
     uvm_config_db#(i2c_config)::set(this, "env.agent", "cfg", cfg);
   endfunction
 
   function void end_of_elaboration_phase(uvm_phase phase);
-    // Disable noisy reports
     uvm_top.print_topology();
-    
-    // Suppress "demoted/caught" summary
-    // UVM doesn't have a simple switch for just that table, 
-    // but we can use report_server to disable specific summary outputs
-    // or just rely on simulator specific flags.
-    // However, usually this is managed via the UVM report server.
-    // For now, let's just keep topology print.
   endfunction
   
   function void report_phase(uvm_phase phase);
@@ -43,10 +45,6 @@ class i2c_test_base extends uvm_test;
      super.report_phase(phase);
      
      svr = uvm_report_server::get_server();
-     // svr.summarize(); // This is called by default by run_test()
-     // To hide the "demoted/caught" counts, we have to override the report server or accept it.
-     // Standard UVM always prints these if they are zero.
-     // But we can check if there are errors and only print failure message.
      
      if (svr.get_severity_count(UVM_FATAL) + svr.get_severity_count(UVM_ERROR) == 0) begin
         $display("\n========================================================");

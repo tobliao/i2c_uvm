@@ -9,6 +9,9 @@ class i2c_config extends uvm_object;
   // Role configuration
   bit is_master = 1; // 1 = Master, 0 = Slave
   
+  // Target Slave Address (for Master mode transactions)
+  bit [6:0] slave_addr = 7'h55;
+  
   // Speed configuration
   i2c_speed_e speed = I2C_STANDARD_MODE;
 
@@ -21,6 +24,7 @@ class i2c_config extends uvm_object;
   `uvm_object_utils_begin(i2c_config)
     `uvm_field_enum(uvm_active_passive_enum, is_active, UVM_ALL_ON)
     `uvm_field_int(is_master, UVM_ALL_ON)
+    `uvm_field_int(slave_addr, UVM_ALL_ON)
     `uvm_field_enum(i2c_speed_e, speed, UVM_ALL_ON)
     `uvm_field_int(t_low_ns, UVM_ALL_ON)
     `uvm_field_int(t_high_ns, UVM_ALL_ON)

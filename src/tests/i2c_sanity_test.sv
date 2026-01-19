@@ -9,7 +9,7 @@ class i2c_sanity_test extends i2c_test_base;
   endfunction
 
   task run_phase(uvm_phase phase);
-    i2c_master_write_seq seq;
+    i2c_mixed_sequence seq;
     i2c_transaction      dummy_tr;
     
     phase.raise_objection(this);
@@ -17,13 +17,14 @@ class i2c_sanity_test extends i2c_test_base;
     // ---------------------------------------------------------
     // PHASE 1: Master Mode (VIP acts as Master)
     // ---------------------------------------------------------
-    `uvm_info("TEST", ">>> PHASE 1: VIP Master -> RTL Slave (Running 1000 packets)", UVM_LOW)
+    `uvm_info("TEST", $sformatf(">>> PHASE 1: VIP Master -> RTL Slave (addr=0x%0h)", cfg.slave_addr), UVM_LOW)
     
-    seq = i2c_master_write_seq::type_id::create("seq");
-    
-    repeat(1000) begin
-       seq.start(env.agent.sequencer);
-    end
+    seq = i2c_mixed_sequence::type_id::create("seq");
+    seq.target_addr = cfg.slave_addr; // Use configured address
+    if (!seq.randomize() with { num_transactions == 20; }) 
+       `uvm_fatal("TEST", "Randomization failed")
+
+    seq.start(env.agent.sequencer);
     
     #10us; // Small drain time
     
@@ -37,7 +38,7 @@ class i2c_sanity_test extends i2c_test_base;
     
     // 2. Unblock the Driver
     seq.req = i2c_transaction::type_id::create("dummy_tr");
-    seq.start_item(seq.req); // reusing the 'seq' object which is already a sequence
+    seq.start_item(seq.req);
     if (!seq.req.randomize() with {
         addr == 0; 
         direction == I2C_READ;
@@ -51,45 +52,17 @@ class i2c_sanity_test extends i2c_test_base;
     // PHASE 3: Slave Mode (VIP acts as Slave)
     // ---------------------------------------------------------
     
-    // The RTL Master in tb_top.sv will trigger multiple times.
-    // We want to observe activity.
-    
-    // Add a timeout just in case
     fork
         begin
-            // Wait for activity
-            // Since RTL Master runs 100 times, we should see activity.
-            // Let's just wait for a significant amount of time to allow multiple packets to pass.
-            // Or better, we can loop waiting for 'scl' toggles to prove activity.
-            
-            // Wait for activity
-            // RTL Master Loop: 100 iterations.
-            // Each transaction has ~20 bits (Addr+Data+ACKs) * 4us/bit = 80us.
-            // Plus 50us gap. Total ~130us per transaction.
-            // 100 transactions ~ 13ms.
-            //
-            // We wait for 100 SCL toggles. 100 toggles = 50 clocks = ~200us.
-            // This condition is met almost instantly after the first packet starts.
-            
             repeat(100) begin
                 wait (env.agent.vif.scl === 0);
                 wait (env.agent.vif.scl === 1);
             end
              
             `uvm_info("TEST", ">>> Activity Detected (Saw 100 SCL Toggles)", UVM_LOW)
-            
-            // Wait for ALL RTL Master transactions to finish.
-            // 100 packets * ~200us gap/pkt = 20ms. 
-            // We were waiting 200ms which is plenty.
             #200ms; 
         end
         begin
-             // The Timeout logic starts counting from when Phase 2 starts (approx 108ms).
-             // If we time out at 508ms (Total Sim Time), it means we waited 400ms here.
-             // But I just changed it to 1000ms in the previous commit.
-             // If you are still seeing 508ms crash, it means the previous commit WAS NOT PULLED or compiled?
-             // Or maybe 'phase 2' starts later?
-             // Let's make it huge to be absolutely safe.
             #2000ms; 
             `uvm_fatal("TEST", "Timeout waiting for RTL Master activity")
         end

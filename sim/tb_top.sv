@@ -4,6 +4,12 @@ module tb_top;
   import uvm_pkg::*;
   import i2c_test_pkg::*;
 
+  // ============================================================
+  // SINGLE SOURCE OF TRUTH: DUT Slave Address
+  // Both RTL and VIP must use this same value to stay in sync
+  // ============================================================
+  localparam bit [6:0] DUT_SLAVE_ADDR = 7'h55;
+
   // Clock and Reset for RTL Master
   reg clk;
   reg rst_n;
@@ -14,6 +20,9 @@ module tb_top;
   // RTL Interface connections (Master)
   wire mst_scl_o, mst_sda_o, mst_scl_oe, mst_sda_oe;
   reg  mst_req;
+  reg  mst_rw;      // Control for R/W
+  reg  [6:0] mst_addr; // Control for Address
+  reg  [7:0] mst_data; // Control for Write Data (randomized for toggle coverage)
   wire mst_done;
   wire mst_ack_error;
 
@@ -24,9 +33,9 @@ module tb_top;
   pullup(intf.scl);
   pullup(intf.sda);
 
-  // DUT Instance: SLAVE (Used for Master-Mode Tests)
+  // DUT Instance: SLAVE (Uses DUT_SLAVE_ADDR)
   i2c_slave #(
-    .SLAVE_ADDR(7'h55)
+    .SLAVE_ADDR(DUT_SLAVE_ADDR)
   ) dut_slave (
     .scl_i(intf.scl), 
     .sda_i(intf.sda),
@@ -44,9 +53,9 @@ module tb_top;
     .clk(clk),
     .rst_n(rst_n),
     .req_i(mst_req),
-    .rw_i(1'b0), // Write
-    .addr_i(7'h55),
-    .data_in(8'hAA),
+    .rw_i(mst_rw),
+    .addr_i(mst_addr),
+    .data_in(mst_data),  // Randomized for toggle coverage
     .data_out(),
     .done_o(mst_done),
     .ack_error_o(mst_ack_error),
@@ -77,37 +86,69 @@ module tb_top;
   initial begin
     rst_n = 0;
     mst_req = 0;
+    mst_rw = 0;
+    mst_addr = DUT_SLAVE_ADDR; // Use the same address
+    mst_data = 8'h00;
+    
     #100;
     rst_n = 1;
     #100;
     
-    // Trigger Master RTL if running Slave Test
-    // Phase 1 (Master Mode) takes ~100-200us per packet. 
-    // 1000 pkts * 200us = 200ms.
-    // So we wait 300ms before triggering RTL Master.
+    // Toggle reset again for coverage
+    #1000;
+    rst_n = 0;
+    #100;
+    rst_n = 1;
+    #100;
     
-    // ADJUSTMENT: The timeout error suggests 300ms might be barely missing the mark or something else.
-    // Let's reduce this wait to ensure we definitely trigger while the test is waiting.
-    // The test switches to Slave Mode immediately after Phase 1.
-    // If Phase 1 takes 108ms (from previous log), triggering at 120ms is safer than 300ms.
+    // Trigger RTL Master if running Slave Test
+    // Phase 1 (Master Mode) runs 20 mixed packets (approx 4ms).
+    // We wait 10ms to ensure VIP is in Slave Mode.
     
-    #120000000; // 120ms (was 300ms)
+    #10000000; // 10ms
     
+    $display("TB_TOP: Triggering RTL Master Sequence...");
+
     // Trigger RTL Master multiple times to generate traffic for Slave Mode
     repeat(100) begin
+      @(posedge clk);
       mst_req = 1;
-      #5000; // Trigger pulse extended to 5us (must be > 4*CLK_DIV*clk_period approx 1us)
+      
+      // Randomize traffic type
+      mst_rw = $random % 2; // Random Read/Write
+      
+      // Randomize data for write transactions (toggle coverage)
+      mst_data = $random;
+      
+      // Vary addresses to toggle all addr_i bits while maintaining high valid rate
+      // 80% valid address for good slave coverage, 20% varied for toggle coverage
+      case ($random % 20)
+        0: mst_addr = ~DUT_SLAVE_ADDR;          // 0x2A = 0101010 (inverted for toggle)
+        1: mst_addr = 7'h00;                    // All zeros
+        2: mst_addr = 7'h7F;                    // All ones  
+        3: mst_addr = $random;                  // Random
+        default: mst_addr = DUT_SLAVE_ADDR;     // Valid address (80%)
+      endcase
+      
+      // Wait for ACK of request
+      #5000; 
       mst_req = 0;
       
       // Wait for transaction to complete
-      wait(mst_done);
+      @(posedge mst_done);
+      
       #50000; // 50us gap between transactions
     end
   end
 
-  // Connect Interface to UVM DB
+  // Connect Interface and Configuration to UVM DB
   initial begin
+    // Pass the interface
     uvm_config_db#(virtual i2c_if)::set(null, "*", "vif", intf);
+    
+    // Pass the slave address so VIP sequences can use it
+    uvm_config_db#(bit[6:0])::set(null, "*", "slave_addr", DUT_SLAVE_ADDR);
+    
     run_test();
   end
 

@@ -46,8 +46,11 @@ module i2c_master #(
   // Tri-state control
   logic scl_out_reg, sda_out_reg;
   
-  assign scl_o  = 1'b0;
-  assign sda_o  = 1'b0;
+  // Open-drain: output follows internal reg, OE is inverted
+  // When reg=0: OE=1, O=0 -> drives low
+  // When reg=1: OE=0, O=1 -> high-Z (released)
+  assign scl_o  = scl_out_reg;
+  assign sda_o  = sda_out_reg;
   assign scl_oe = !scl_out_reg;
   assign sda_oe = !sda_out_reg;
   
@@ -181,7 +184,10 @@ module i2c_master #(
        if (bit_cnt == 0) begin 
           data_out <= shift_reg; // Store result
           state <= next_s;
-       end else bit_cnt <= bit_cnt - 1;
+          // bit_cnt will be reset by the caller/next state init
+       end else begin
+          bit_cnt <= bit_cnt - 1;
+       end
     end
   endtask
   
@@ -191,7 +197,11 @@ module i2c_master #(
     if (phase == 2) begin 
        if (sda_i) ack_error_o <= 1; // NACK received
     end 
-    if (phase == 3) begin scl_out_reg <= 0; state <= next_s; end
+    if (phase == 3) begin 
+       scl_out_reg <= 0; 
+       state <= next_s; 
+       bit_cnt <= 7; // Reset bit counter for next byte (Data Phase)
+    end
   endtask
   
   task run_tx_nack(state_t next_s);

@@ -19,6 +19,9 @@ package i2c_test_pkg;
   `include "tests/i2c_restart_test.sv"
   `include "tests/i2c_gen_call_test.sv"
   `include "tests/i2c_speed_test.sv"
+  `include "tests/i2c_random_test.sv"
+  `include "tests/i2c_slave_read_test.sv"
+  `include "tests/i2c_master_fsm_test.sv"
 
 endpackage
 

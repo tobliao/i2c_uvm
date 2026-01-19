@@ -38,6 +38,10 @@ run: comp
 run_slave: comp
 	$(SIM) +UVM_TESTNAME=i2c_slave_test -l run_slave.log
 
+# Run Random Mixed Traffic Test
+run_random: comp
+	$(SIM) +UVM_TESTNAME=i2c_random_test -l run_random.log
+
 # Regression Target: Runs all tests and merges coverage
 # Note: 'simv' handles merging into the same 'coverage.vdb' by default if run sequentially
 regr: comp
@@ -49,6 +53,9 @@ regr: comp
 	$(SIM) +UVM_TESTNAME=i2c_restart_test  -l run_restart.log  -cm_name restart_test
 	$(SIM) +UVM_TESTNAME=i2c_gen_call_test -l run_gen_call.log -cm_name gen_call_test
 	$(SIM) +UVM_TESTNAME=i2c_speed_test    -l run_speed.log    -cm_name speed_test
+	$(SIM) +UVM_TESTNAME=i2c_random_test   -l run_random.log   -cm_name random_test
+	$(SIM) +UVM_TESTNAME=i2c_slave_read_test -l run_slave_read.log -cm_name slave_read_test
+	$(SIM) +UVM_TESTNAME=i2c_master_fsm_test -l run_master_fsm.log -cm_name master_fsm_test
 	@echo "Regression Complete. Coverage data in coverage.vdb"
 
 # Generate Coverage Report (URG)
