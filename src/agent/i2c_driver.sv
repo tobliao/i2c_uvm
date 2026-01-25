@@ -6,6 +6,7 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
 
   virtual i2c_if vif;
   i2c_config     cfg;
+  time           idle_poll_time = 1000ns; // prevents busy-spins when no items are available
 
   function new(string name, uvm_component parent);
     super.new(name, parent);
@@ -17,18 +18,26 @@ class i2c_driver extends uvm_driver #(i2c_transaction);
     vif.sda_drive <= 1'b1;
     
     forever begin
-      // Check Configuration at the start of each transaction cycle
+      // NOTE: cfg.is_master is allowed to change at runtime (dual-role).
+      // The driver must therefore avoid indefinitely blocking in MASTER mode
+      // when no new items are pending; otherwise role switching requires hacks
+      // (e.g., injecting a "dummy" item to unblock get_next_item()).
       if (cfg.is_master) begin
         // --- MASTER MODE ---
-        // Get the next item (Blocking)
-        seq_item_port.get_next_item(req);
-        
-        drive_transfer(req);
-        seq_item_port.item_done();
-        
+        // Non-blocking pull to allow role changes to take effect promptly.
+        req = null;
+        seq_item_port.try_next_item(req);
+        if (req != null) begin
+          drive_transfer(req);
+          seq_item_port.item_done();
+        end else begin
+          // No item available: wait briefly or until a role-update event is triggered.
+          bit timed_out;
+          i2c_event_pool::wait_for_event_timeout(i2c_event_pool::ROLE_UPDATE, idle_poll_time, timed_out);
+        end
       end else begin
         // --- SLAVE MODE ---
-        // Listen to the bus
+        // Listen to the bus (passive timing: SCL is observed, never driven).
         wait_for_request();
       end
     end

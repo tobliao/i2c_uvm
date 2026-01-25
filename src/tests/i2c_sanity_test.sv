@@ -10,7 +10,7 @@ class i2c_sanity_test extends i2c_test_base;
 
   task run_phase(uvm_phase phase);
     i2c_mixed_sequence seq;
-    i2c_transaction      dummy_tr;
+    bit timed_out;
     
     phase.raise_objection(this);
     
@@ -33,18 +33,15 @@ class i2c_sanity_test extends i2c_test_base;
     // ---------------------------------------------------------
     `uvm_info("TEST", ">>> PHASE 2: Switching VIP to Slave Mode", UVM_LOW)
     
-    // 1. Change Configuration
+    // Ensure we commit switching at a protocol boundary (STOP + bus-free).
+    // Reset BUS_IDLE so we wait for the post-sequence idle window.
+    i2c_event_pool::reset_event(i2c_event_pool::BUS_IDLE);
+    i2c_event_pool::wait_for_event_timeout(i2c_event_pool::BUS_IDLE, 200us, timed_out);
+    if (timed_out) `uvm_warning("TEST", "BUS_IDLE not observed before role switch; switching anyway")
+
+    // Change configuration and trigger ROLE_UPDATE to wake the driver if it is idle-polling.
     cfg.is_master = 0;
-    
-    // 2. Unblock the Driver
-    seq.req = i2c_transaction::type_id::create("dummy_tr");
-    seq.start_item(seq.req);
-    if (!seq.req.randomize() with {
-        addr == 0; 
-        direction == I2C_READ;
-        data.size() == 1;
-    }) `uvm_error("TEST", "Randomization failed")
-    seq.finish_item(seq.req);
+    i2c_event_pool::trigger_event(i2c_event_pool::ROLE_UPDATE);
 
     `uvm_info("TEST", ">>> VIP is now in Slave Mode (Waiting for RTL Master)", UVM_LOW)
 

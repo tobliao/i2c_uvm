@@ -76,3 +76,19 @@ core.*
 # =============================================================================
 __pycache__/
 *.pyc
+
+# =============================================================================
+# Generated images / reports
+# =============================================================================
+@img/
+@python_libs/
+python_libs/
+
+# Keep Python scripts under img/, but ignore generated outputs there
+img/**/*.png
+img/**/*.jpg
+img/**/*.jpeg
+img/**/*.gif
+img/**/*.webp
+img/**/*.svg
+img/**/*.pdf

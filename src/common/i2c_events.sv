@@ -24,6 +24,8 @@ class i2c_event_pool extends uvm_object;
   static string NACK_RECEIVED    = "nack_received";
   static string ARB_LOST         = "arb_lost";
   static string BUS_IDLE         = "bus_idle";
+  static string ROLE_UPDATE      = "role_update";   // Config/role change request (wake-up hint)
+  static string ROLE_COMMITTED   = "role_committed"; // Role change committed (optional)
   static string ERROR_DETECTED   = "error_detected";
   
   function new(string name = "i2c_event_pool");
@@ -115,6 +117,8 @@ class i2c_event_pool extends uvm_object;
     reset_event(NACK_RECEIVED);
     reset_event(ARB_LOST);
     reset_event(BUS_IDLE);
+    reset_event(ROLE_UPDATE);
+    reset_event(ROLE_COMMITTED);
     reset_event(ERROR_DETECTED);
   endfunction
 
