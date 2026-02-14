@@ -228,6 +228,22 @@ make cov_rpt        # Generate coverage report (URG)
 make view_cov       # View in Verdi
 ```
 
+### Paper Regression (New)
+A specialized regression target for IEEE Access paper validation.
+```bash
+make regr_paper
+```
+- **Scope:** 11 Scenarios × 15 Iterations = 165 Total Runs
+- **Features:**
+  - Automatic random seeding (`+ntb_random_seed_automatic`)
+  - Professional summary report generation
+  - CPU time tracking per test
+  - Logs to `regression_raw.csv`
+- **Output:**
+  - Console summary table (screenshot-ready)
+  - `regr_paper.log` (full log)
+  - `regression_raw.csv` (metrics)
+
 ## Common Issues & Solutions
 
 ### Coverage Still Low
@@ -554,3 +570,20 @@ endclass
 | Objections | `uvm_objection` | Phase control | Throughout |
 | Factory | `uvm_factory` | Object creation | Throughout |
 | Config DB | `uvm_config_db` | Configuration passing | Throughout |
+
+## Recent Updates (Feb 2026)
+
+### Paper Regression Suite
+- **Target:** `make regr_paper`
+- **Runs:** 165 total (15 iterations of 11 distinct test cases)
+- **Reporting:** Generates professional IEEE-style summary table
+- **Metrics:** Tracks Pass/Fail status and CPU time per test
+- **Artifacts:** `regression_raw.csv`, `regr_paper.log`
+
+### Manuscript Updates
+- **File:** `paper/access.tex`
+- **Content:** Updated quantitative results section to reflect 165 runs across 3 evaluation categories.
+- **Figures:** Added `img/regression_summary.png` showing the automated regression report.
+
+### Git Configuration
+- **.gitignore:** Updated to exclude paper artifacts (`paper/`, `img/`) and temporary regression files (`.start_time`, `.end_time`, `regression_raw.csv`).

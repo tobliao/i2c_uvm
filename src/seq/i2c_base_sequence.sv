@@ -18,6 +18,46 @@ class i2c_base_sequence extends uvm_sequence #(i2c_transaction);
 endclass
 
 //------------------------------------------------------------------------------
+// Single Transaction Sequence - Flexible wrapper for any transaction
+//------------------------------------------------------------------------------
+class i2c_single_transaction_seq extends i2c_base_sequence;
+  `uvm_object_utils(i2c_single_transaction_seq)
+  
+  rand i2c_direction_e direction;
+  rand i2c_addr_mode_e addr_mode;
+  rand bit [9:0] addr;
+  rand bit [7:0] data[];
+  rand bit repeated_start;
+  
+  constraint c_default {
+    addr_mode == I2C_ADDR_7BIT;
+    data.size() inside {[1:8]};
+    repeated_start == 0;
+  }
+
+  function new(string name = "i2c_single_transaction_seq");
+    super.new(name);
+    direction = I2C_WRITE;
+    addr = 7'h55;
+    data = new[1];
+  endfunction
+
+  task body();
+    req = i2c_transaction::type_id::create("req");
+    
+    start_item(req);
+    req.direction = direction;
+    req.addr_mode = addr_mode;
+    req.addr = addr;
+    req.data = data; // Deep copy of dynamic array
+    req.repeated_start = repeated_start;
+    finish_item(req);
+    
+    `uvm_info("SEQ", $sformatf("Finished Single Transaction: %s", req.convert2string()), UVM_LOW)
+  endtask
+endclass
+
+//------------------------------------------------------------------------------
 // Write Sequence - sends specific data to slave
 //------------------------------------------------------------------------------
 class i2c_write_sequence extends i2c_base_sequence;
@@ -132,4 +172,3 @@ class i2c_master_read_seq extends i2c_base_sequence;
 endclass
 
 `endif // I2C_BASE_SEQUENCE_SV
-

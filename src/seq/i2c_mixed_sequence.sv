@@ -7,7 +7,7 @@ class i2c_mixed_sequence extends i2c_base_sequence;
   rand int num_transactions;
 
   constraint c_num_trans {
-    num_transactions inside {[10:50]};
+    num_transactions inside {[10:200]};
   }
 
   function new(string name = "i2c_mixed_sequence");

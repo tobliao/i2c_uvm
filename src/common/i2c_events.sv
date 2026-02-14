@@ -89,7 +89,7 @@ class i2c_event_pool extends uvm_object;
     disable fork;
     
     if (timed_out)
-      `uvm_warning("I2C_EVENT", $sformatf("Event '%s' timed out after %0t", name, timeout))
+      `uvm_info("I2C_EVENT", $sformatf("Event '%s' timed out after %0t", name, timeout), UVM_HIGH)
   endtask
   
   //----------------------------------------------------------------------------

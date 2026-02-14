@@ -9,22 +9,19 @@ class i2c_gen_call_test extends i2c_test_base;
   endfunction
 
   task run_phase(uvm_phase phase);
-    i2c_master_write_seq seq;
+    i2c_single_transaction_seq seq;
     phase.raise_objection(this);
     
     `uvm_info("TEST", "Starting General Call Test", UVM_LOW)
     
-    seq = i2c_master_write_seq::type_id::create("seq");
-    
     repeat(10) begin
-      seq.req = i2c_transaction::type_id::create("req");
-      seq.start_item(seq.req);
-      if (!seq.req.randomize() with {
+      seq = i2c_single_transaction_seq::type_id::create("seq");
+      if (!seq.randomize() with {
           addr == 0; // General Call Address
           direction == I2C_WRITE; // Must be Write
           data.size() inside {[1:8]};
       }) `uvm_error("TEST", "Randomization failed")
-      seq.finish_item(seq.req);
+      seq.start(env.agent.sequencer);
     end
     
     #100us;

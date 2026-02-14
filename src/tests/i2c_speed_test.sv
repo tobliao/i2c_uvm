@@ -21,13 +21,10 @@ class i2c_speed_test extends i2c_test_base;
     
     `uvm_info("TEST", "Starting Speed Config Test (Fast Mode)", UVM_LOW)
     
-    seq = i2c_master_write_seq::type_id::create("seq");
-    
     repeat(10) begin
-      seq.req = i2c_transaction::type_id::create("req");
-      seq.start_item(seq.req);
-      if (!seq.req.randomize()) `uvm_error("TEST", "Randomization failed")
-      seq.finish_item(seq.req);
+      seq = i2c_master_write_seq::type_id::create("seq");
+      seq.target_addr = cfg.slave_addr;
+      seq.start(env.agent.sequencer);
     end
     
     #100us;
