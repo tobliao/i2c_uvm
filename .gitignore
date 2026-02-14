@@ -63,6 +63,9 @@ sim/*.shm/
 .nfs*
 core
 core.*
+sim/.start_time
+sim/.end_time
+sim/regression_raw.csv
 
 # =============================================================================
 # Editor/IDE Files
@@ -83,6 +86,8 @@ __pycache__/
 @img/
 @python_libs/
 python_libs/
+paper/
+img/
 
 # Keep Python scripts under img/, but ignore generated outputs there
 img/**/*.png
